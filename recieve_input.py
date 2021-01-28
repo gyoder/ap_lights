@@ -27,7 +27,7 @@ while True:
     if not data:
         break
     try:
-        pixels.fill(0)
+        #pixels.fill(0)
         pixels[int(data.decode())] = (255, 255, 255)
         print(int(data.decode()))
     except:
