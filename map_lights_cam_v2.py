@@ -4,10 +4,13 @@ import cv2
 from time import sleep
 import socket
 import numpy as np
+import math
 
 
 
 def init_network(host = '192.168.0.79', port = 50007):
+    #https://docs.python.org/3/library/socket.html#example
+    #i did write the communication code but not the init code
     s = socket.socket(socket.AF_INET, socket.SOCK_STREAM) # this is what the documentation said
     s.connect((host, port)) # connect to the rpi. the rpi's ip is the default
     return s
@@ -25,6 +28,7 @@ def save_image(device, light):
     print('saved image for', light)         # have to do because i cant fix it
 
 def get_bright(image):
+    #the majority of this code is taken from https://www.pyimagesearch.com/2014/09/29/finding-brightest-spot-image-using-python-opencv/
     grey_image = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY) #greyscale image for faster procesing
     grey_image_blur = cv2.GaussianBlur(grey_image,(15,15),cv2.BORDER_DEFAULT)
     #the image is blured ^^ to make sure there are no false positives for a different point
@@ -55,6 +59,17 @@ def main():
                 (maxLoc, maxVal) = get_bright(cv2.imread('led.png'))
         cords.append([maxLoc[0], maxLoc[1], i]) #put the cordinates on the list
     cords.pop(0)
+    print(cords)
+    for i in range(48):
+        cords[i+1].append((math.sqrt(((cords[i+1][0]-cords[i][0])**2) + ((cords[i+1][1]-cords[i][1])**2))) + (math.sqrt(((cords[i+1][0]-cords[i-1][0])**2) + ((cords[i][1]-cords[i-1][1])**2))))
+    cords[0].append(cords[1][3])
+    cords[49].append(cords[48][3])
+    cordsdist = 0
+    for i in cords:
+        #print(i[3])
+        cordsdist += i[3]
+    cordsdist = cordsdist / 50
+    print(cordsdist)
     print(cords)
 
 main()
