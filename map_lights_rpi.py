@@ -4,7 +4,7 @@ import neopixel #used for controlling led on rpi
 
 pixel_pin = board.D18   #used gpio pin 18
 pixels = neopixel.NeoPixel(#initalises lights.
-    pixel_pin, 50, brightness=0.2, auto_write=True, pixel_order=neopixel.GRB
+    pixel_pin, 50, brightness=1, auto_write=True, pixel_order=neopixel.GRB
 )
 pixels.fill(0)
 
@@ -16,7 +16,7 @@ s.bind((host, port))
 s.listen(1)
 conn, addr = s.accept()
 print('connected to', addr)
-data = conn.recv(1024)
+#data = conn.recv(1024)
 
 
 
@@ -28,7 +28,7 @@ while True:
         break
     try:
         pixels.fill(0)
-        pixels[int(data.decode())] = (255, 255, 255)
+        pixels[int(data.decode())] = (0, 255, 0)
         print(int(data.decode()))
     except:
         print('did not like data')
