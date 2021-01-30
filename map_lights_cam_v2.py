@@ -5,6 +5,7 @@ from time import sleep
 import socket
 import numpy as np
 import math
+from PIL import Image
 
 
 
@@ -27,13 +28,34 @@ def save_image(device, light):
     pygame.image.save(image, 'led.png') # this is very janky but it will
     print('saved image for', light)         # have to do because i cant fix it
 
-def get_bright(image):
+def get_bright_old(image):
     #the majority of this code is taken from https://www.pyimagesearch.com/2014/09/29/finding-brightest-spot-image-using-python-opencv/
     grey_image = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY) #greyscale image for faster procesing
     grey_image_blur = cv2.GaussianBlur(grey_image,(15,15),cv2.BORDER_DEFAULT)
     #the image is blured ^^ to make sure there are no false positives for a different point
     (minVal, maxVal, minLoc, maxLoc) = cv2.minMaxLoc(grey_image_blur) #find values for birgtest
     return maxLoc, maxVal # return the values to check to see if they are too high
+
+def get_bright(image):
+    npimage = np.array(image)
+    xcord = 0
+    ycord = 0
+    red_cords = []
+    for i in npimage:
+        xcord += 1
+        ycord = 0
+        for j in i:
+            ycord += 1
+            contrast = (int(j[0]) - ((int(j[1]) + int(j[2])) / 2))
+            if contrast > 150:
+                red_cords.append((xcord, ycord, contrast))
+
+    red_cords = np.array(red_cords)
+
+    (locX, locY, contrast) = np.median(red_cords, axis=0) #https://numpy.org/doc/stable/reference/generated/numpy.median.html
+
+
+    return locX, locY, contrast
 
 def main():
     pygame.init()
@@ -44,20 +66,21 @@ def main():
 
     rpi = init_network() # get the rpi connect
     cords = [[0, 0, -1]]
+    sleep(5)
     for i in range(50): # there are 50 lights so this is how to get them
-        maxVal = 0
+        contrast = 0
         # the maxVal is to make sure its not too dark. the lights get bright so it is fine
-        while (maxVal < 200):
+        while (contrast < 200):
             request_light(rpi, i)
             save_image(video_input, i)
-            (maxLoc, maxVal) = get_bright(cv2.imread('led.png'))
+            (locX, locY, contrast) = get_bright(Image.open('led.png'))
             #there has to be a cleaner way to do this where i dont have the
             #same code twice in a row, but this check is nessasary
-            while (maxLoc[0] == cords[-1][0]) or (maxLoc[1] == cords[-1][1]):
+            while (locX == cords[-1][0]) or (locY == cords[-1][1]):
                 request_light(rpi, i)
                 save_image(video_input, i)
-                (maxLoc, maxVal) = get_bright(cv2.imread('led.png'))
-        cords.append([maxLoc[0], maxLoc[1], i]) #put the cordinates on the list
+                (locX, locY, contrast) = get_bright(Image.open('led.png'))
+        cords.append((locX, locY, i)) #put the cordinates on the list
     cords.pop(0)
     print(cords)
     for i in range(48):
