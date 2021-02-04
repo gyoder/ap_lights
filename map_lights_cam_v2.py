@@ -38,29 +38,37 @@ def get_bright_old(image):
 
 def get_bright(image):
     npimage = np.array(image) #make the image a numpy array for raw data processing
-    xcord = 0
-    red_cords = []
-    for i in npimage:
-        xcord += 1 #this is a bit bad. make it read what idderation its on
-        ycord = 0# reset each time
-        for j in i:
-            ycord += 1
-            contrast = (int(j[0]) - ((int(j[1]) + int(j[2])) / 2))# find the contrast between red and blue/green
-            if contrast > 150:# might want to make this more reasonable
-                red_cords.append((xcord, ycord, contrast))
-
+    red_cords = find_contrast_points(npimage)
+    while len(red_cords) == 0:
+        find_contrast_points(npimage)
+    print(len(red_cords))
     red_cords = sorted(red_cords, key = lambda x: x[2]) #https://www.geeksforgeeks.org/python-sort-list-according-second-element-sublist/
     # ^^ sorts it by contrast
-    for i in range(round(len(red_cords) * .9)):
-        red_cords.pop(0)# gets the top 10% of contrast lights
 
+    for i in range(round(len(red_cords) * .9) - 1):
+        red_cords.pop(0)# gets the top 10% of contrast lights
+    print(red_cords)
     red_cords = np.array(red_cords)
+    print(red_cords)
 
     (locX, locY, contrast) = np.median(red_cords, axis=0) #https://numpy.org/doc/stable/reference/generated/numpy.median.html
     #find the median
     ## TODO: make it so that it will check for advrage vs median just to see what is off
 
     return locX, locY, contrast
+
+def find_contrast_points(img_array):
+    xcord = 0
+    high_con_points = []
+    for i in img_array:
+        xcord += 1 #this is a bit bad. make it read what idderation its on
+        ycord = 0# reset each time
+        for j in i:
+            ycord += 1
+            contrast = (int(j[0]) - ((int(j[1]) + int(j[2])) / 2))# find the contrast between red and blue/green
+            if contrast > 150:# might want to make this more reasonable
+                high_con_points.append((xcord, ycord, contrast))
+    return high_con_points
 
 def get_cords(led, prev_loc, net_dev, video_input): #moved to a recursive function to make logging more verbose
     request_light(net_dev, led)
