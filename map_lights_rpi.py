@@ -28,7 +28,7 @@ while True:
         break
     try:
         pixels.fill(0)
-        pixels[int(data.decode())] = (0, 255, 0)
+        pixels[int(data.decode())] = (255, 255, 255)
         print(int(data.decode()))
     except:
         print('did not like data')
