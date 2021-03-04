@@ -23,13 +23,19 @@ print('connected to', addr)
 
 
 while True:
-    data = conn.recv(1024)
+    data = conn.recv(4096)
     if not data:
         break
-    try:
-        pixels.fill(0)
-        pixels[int(data.decode())] = (255, 255, 255)
-        print(int(data.decode()))
-    except:
-        print('did not like data')
+    if int(data.decode()) == 500:
+        data = conn.recv(8192)
+        with open('cords.txt', 'w') as file:
+            file.write(data.decode())
+        break
+    else:
+        try:
+            pixels.fill(0)
+            pixels[int(data.decode())] = (255, 255, 255)
+            print(int(data.decode()))
+        except:
+            print('did not like data')
 conn.close()

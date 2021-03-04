@@ -95,7 +95,7 @@ def get_cords(led, prev_loc, net_dev, video_input): #moved to a recursive functi
         print('Same location detected')
         return get_cords(led, prev_loc, net_dev, video_input)
     else:
-        return [locX, locY, led]
+        return [round(locX), round(locY), led]
 
 def main():
     pygame.init()
@@ -106,14 +106,15 @@ def main():
 
     rpi = init_network() # get the rpi connect
     cords = [[0, 0, -1]]
-    sleep(5)
+    sleep(.5)
     for i in range(50): # there are 50 lights so this is how to get them
 
         cords.append(get_cords(i, (cords[-1][0], cords[-1][1]), rpi, video_input)) #put the cordinates on the list
     cords.pop(0)
     print(cords)
     for i in range(48):
-        cords[i+1].append((math.sqrt(((cords[i+1][0]-cords[i][0])**2) + ((cords[i+1][1]-cords[i][1])**2))) + (math.sqrt(((cords[i+1][0]-cords[i-1][0])**2) + ((cords[i][1]-cords[i-1][1])**2))))
+        cords[i+1].append(round((math.sqrt(((cords[i+1][0]-cords[i][0])**2) + ((cords[i+1][1]-cords[i][1])**2))) + (math.sqrt(((cords[i+1][0]-cords[i-1][0])**2) + ((cords[i][1]-cords[i-1][1])**2)))))
+        # i hope that ^^^ never breaks because i do NOT want to know what i was thinking when writing that
     cords[0].append(cords[1][3])
     cords[49].append(cords[48][3])
     cordsdist = 0
@@ -123,5 +124,9 @@ def main():
     cordsdist = cordsdist / 50
     print(cordsdist)
     print(cords)
+    request_light(rpi, 500)
+    sleep(.5)
+    rpi.send(str(cords).encode())
+    print('sending cords')
 
 main()
