@@ -40,7 +40,8 @@ def get_bright(image):
     npimage = np.array(image) #make the image a numpy array for raw data processing
     red_cords = find_brightness_points(npimage)
     while len(red_cords) == 0:
-        find_brightness_points(npimage)
+        #red_cords = find_brightness_points(npimage)
+        return (0, 0, 0)
     #print(len(red_cords))
     red_cords = sorted(red_cords, key = lambda x: x[2]) #https://www.geeksforgeeks.org/python-sort-list-according-second-element-sublist/
     # ^^ sorts it by contrast
@@ -78,8 +79,8 @@ def find_brightness_points(img_array):
         ycord = 0# reset each time
         for j in i:
             ycord += 1
-            brighness = (int(j[0]) + int(j[1]) + int(j[2])) / 3 # find the brighness between red and blue/green
-            if brighness > 225:# might want to make this more reasonable
+            brighness = (int(j[0]) + int(j[1]) + int(j[2])) / 3 # find the brighness
+            if brighness > 240:# might want to make this more reasonable
                 high_brightness_points.append((xcord, ycord, brighness))
     return high_brightness_points
 
@@ -87,8 +88,8 @@ def get_cords(led, prev_loc, net_dev, video_input): #moved to a recursive functi
     request_light(net_dev, led)
     save_image(video_input, led)
     (locX, locY, contrast) = get_bright(Image.open('led.png'))
-    if (contrast < 175): # if it is too dark
-        print('Contrast is too small')
+    if (contrast < 200): # if it is too dark
+        print('brighness is too small')
         return get_cords(led, prev_loc, net_dev, video_input)
     elif (locX == prev_loc[0]) or (locY == prev_loc[1]): #if it is the same location
         print('Same location detected')
