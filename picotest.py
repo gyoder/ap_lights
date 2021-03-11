@@ -4,22 +4,28 @@ from time import sleep
 from random import randint
 import threading
 from picoboard import PicoBoard
+from init_lights import *
 with open('cords.conf', 'r') as cordfile:
-    exec('cords = ' + str(cordfile.read())) #actual garbage
-pixel_pin = board.D18
-pixels = neopixel.NeoPixel(
-    pixel_pin, 50, brightness=1, auto_write=False, pixel_order=neopixel.GRB
-)
+    exec('cords = ' + str(cordfile.read()))
+l = led_lights()
 pb = PicoBoard('/dev/ttyUSB0') #device file for PicoBoard
 while True:
+    blues = []
+    reds = []
+    others = []
     intensity = pb.read()['slider']
-    for j in cords:
-
-        if j[1] < intensity: #1500 - (i* 10):
-            pixels[j[2]] = (0, 0, 255)
-
+    l.fill_all((127, 0, 127))
+    for i in cords:
+        if i[1] - 100 < intensity:
+            blues.append(i[2])
+        elif i[1] + 100 > intensity:
+            reds.append(i[2])
         else:
-            pixels[j[2]] = (0, 255, 0)
+            others.append(i[2])
+    l.fill_some((127,0,0), others)
+    l.fill_some((0, 0, 255), blues)#filter(lambda x: x[2] + 100 <= intensity, cords))
+    #l.fill_some((255, 0, 0), filter(lambda x: x[2] + 100 >= intensity and x[2] - 100 <= intensity, cords))
+    l.fill_some((255, 0, 0), reds)#filter(lambda x: x[2] - 100 >= intensity, cords))
 
-    pixels.show()
-    sleep(0.05)
+
+    l.write()
