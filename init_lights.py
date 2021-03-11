@@ -10,25 +10,26 @@ from random import randint
 from picoboard import PicoBoard
 
 class led_lights:
-    def __init__(count = 50, brightness = 1):
+    def __init__(self, count = 50, brightness = 1):
         self.count = count
         self.lights = neopixel.NeoPixel(
             board.D18, count, brightness=brightness,
             auto_write=False, pixel_order=neopixel.GRB
             )
 
-    def fill_all(color):
+    def fill_all(self, color):
         self.lights.fill((color[1], color[0], color[2]))
 
-    def fill_some(color, lights):
+    def fill_some(self, color, lights):
         for i in lights:
             self.lights[i] = (color[1], color[0], color[2])
 
-    def write():
+    def write(self):
         self.lights.show()
 
 
-def get_cords(file = 'cords.conf'):
-    with open(file, 'r') as cordfile:
+def get_cords(file = 'cords.conf'): # does not work at all, TODO: FIX IT!
+    with open('/home/pi/cords.conf', 'r') as cordfile:
         exec('cords = ' + str(cordfile.read()))
-    return cords
+        print(cordfile.read())
+        return cords
