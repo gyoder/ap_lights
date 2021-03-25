@@ -1,6 +1,7 @@
 import socket # used for connecting and sending commands back
 import board    #used for gpio on rpi
 import neopixel #used for controlling led on rpi
+import sys
 
 pixel_pin = board.D18   #used gpio pin 18
 pixels = neopixel.NeoPixel(#initalises lights.
@@ -14,6 +15,7 @@ port = 50007
 s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
 s.bind((host, port))
 s.listen(1)
+print('run camera program on other computer')
 conn, addr = s.accept()
 print('connected to', addr)
 #data = conn.recv(1024)
@@ -25,6 +27,7 @@ print('connected to', addr)
 while True:
     data = conn.recv(4096)
     if not data:
+        print('exiting')
         break
     if int(data.decode()) == 500:
         data = conn.recv(8192)
@@ -37,5 +40,5 @@ while True:
             pixels[int(data.decode())] = (255, 255, 255)
             print(int(data.decode()))
         except:
-            print('did not like data')
+            sys.stderr.write('Data Is Unreadable')
 conn.close()

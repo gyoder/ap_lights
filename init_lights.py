@@ -32,4 +32,4 @@ def get_cords(file = 'cords.conf'): # does not work at all, TODO: FIX IT!
     with open('/home/pi/cords.conf', 'r') as cordfile:
         exec('cords = ' + str(cordfile.read()))
         print(cordfile.read())
-        return cords
+        return cordfile.read()

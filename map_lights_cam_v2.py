@@ -6,8 +6,8 @@ import socket
 import numpy as np
 import math
 from PIL import Image
-
-
+import sys
+import os
 
 def init_network(host = '192.168.0.79', port = 50007):
     #https://docs.python.org/3/library/socket.html#example
@@ -19,8 +19,8 @@ def init_network(host = '192.168.0.79', port = 50007):
 def request_light(device, light):
     device.send(str(light).encode()) # the socket send function needs binary data
     print('sent request for image', light) # debug statments: remove in final product
-    sleep(.5) # this is to give the lights enough time to turn on with network
-    print('slept')# delay. it can be much lower but it could cause problems so be careful
+    sleep(.25) # this is to give the lights enough time to turn on with network
+    #print('slept')# delay. it can be much lower but it could cause problems so be careful
 
 def save_image(device, light):
     image = device.get_image()     # pygame cannot import into opencv
@@ -97,21 +97,41 @@ def get_cords(led, prev_loc, net_dev, video_input): #moved to a recursive functi
     else:
         return [round(locX), round(locY), led]
 
+
+
 def main():
     pygame.init()
     pygame.camera.init() #init pygame
     #camera on pygame only works with linux so you need to pull the camera from /dev
+    input('Plug In Your Camera. Press ENTER or RETURN to continue')
+    '''
+    camlist = pygame.camera.list_cameras()
+    for i in camlist: # loop through camera list so it doesnt just fail
+        try:
+            video_input = pygame.camera.Camera(i, (1280,720), 'RGB')
+            video_input.start()
+        except:
+            sys.stderr.write('ERROR: camera ' +  str(i) + ' Failed To Start\n')
+
+    #video_input.start()
+    this might need more work
+    '''
     video_input = pygame.camera.Camera('/dev/video0', (1280,720), 'RGB')
     video_input.start()
-
-    rpi = init_network() # get the rpi connect
-    cords = [[0, 0, -1]]
+    try:
+        rpi = init_network() # get the rpi connect
+    except:
+        sys.stderr.write('make sure the pi server is up first\nERROR: network failed to connect: exiting\n')
+        exit()
+    input('Point Your Camera at the Lights. Press ENTER or RETURN to continue')
+    #For instructions requirement
+    cords = [[0, 0, -1]] # just a thing so that error checking is able to be calculated
     sleep(.5)
     for i in range(50): # there are 50 lights so this is how to get them
 
         cords.append(get_cords(i, (cords[-1][0], cords[-1][1]), rpi, video_input)) #put the cordinates on the list
     cords.pop(0)
-    print(cords)
+    #print(cords)
     for i in range(48):
         cords[i+1].append(round((math.sqrt(((cords[i+1][0]-cords[i][0])**2) + ((cords[i+1][1]-cords[i][1])**2))) + (math.sqrt(((cords[i+1][0]-cords[i-1][0])**2) + ((cords[i][1]-cords[i-1][1])**2)))))
         # i hope that ^^^ never breaks because i do NOT want to know what i was thinking when writing that
@@ -122,11 +142,14 @@ def main():
         #print(i[3])
         cordsdist += i[3]
     cordsdist = cordsdist / 50
-    print(cordsdist)
-    print(cords)
+    #print(cordsdist)
+    #print(cords)
     request_light(rpi, 500)
     sleep(.5)
     rpi.send(str(cords).encode())
-    print('sending cords')
-
+    print('sent cords')
+    try:
+        os.remove('led.png') # delete the temp image file
+    except:
+        pass
 main()
