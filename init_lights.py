@@ -24,6 +24,9 @@ class led_lights:
         for i in lights:
             self.lights[i] = (color[1], color[0], color[2])
 
+    def fill_one(self, color, light):
+        self.lights[light] = (color[1], color[0], color[2])
+
     def write(self):
         self.lights.show()
 
