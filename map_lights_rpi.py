@@ -31,14 +31,14 @@ while True:
         break
     if int(data.decode()) == 500:
         data = conn.recv(8192)
-        with open('cords.txt', 'w') as file:
+        with open('cords.conf', 'w') as file:
             file.write(data.decode())
         break
     else:
         try:
             pixels.fill(0)
             pixels[int(data.decode())] = (255, 255, 255)
-            print(int(data.decode()))
+            print(f'Turning on LED {int(data.decode())}')
         except:
             sys.stderr.write('Data Is Unreadable')
 conn.close()

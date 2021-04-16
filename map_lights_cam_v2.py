@@ -24,7 +24,7 @@ def request_light(device, light):
 
 def save_image(device, light):
     image = device.get_image()     # pygame cannot import into opencv
-    print('took image for', light)          # so i need to save it to a file
+    #print('took image for', light)          # so i need to save it to a file
     pygame.image.save(image, 'led.png') # this is very janky but it will
     print('saved image for', light)         # have to do because i cant fix it
 
@@ -58,7 +58,7 @@ def get_bright(image):
 
     return locX, locY, contrast
 
-def find_contrast_points(img_array):
+def find_contrast_points(img_array): # returns a list of high contrast points
     xcord = 0
     high_con_points = []
     for i in img_array:
@@ -84,11 +84,12 @@ def find_brightness_points(img_array):
                 high_brightness_points.append((xcord, ycord, brighness))
     return high_brightness_points
 
-def get_cords(led, prev_loc, net_dev, video_input): #moved to a recursive function to make logging more verbose
+def get_cords(led, prev_loc, net_dev, video_input): # returns tuple containing xcords and ycords and the led
+    #moved to a recursive function to make logging more verbose
     request_light(net_dev, led)
     save_image(video_input, led)
-    (locX, locY, contrast) = get_bright(Image.open('led.png'))
-    if (contrast < 200): # if it is too dark
+    (locX, locY, brighness) = get_bright(Image.open('led.png'))
+    if (brighness < 200): # if it is too dark
         print('brighness is too small')
         return get_cords(led, prev_loc, net_dev, video_input)
     elif (locX == prev_loc[0]) or (locY == prev_loc[1]): #if it is the same location
@@ -104,32 +105,38 @@ def main():
     pygame.camera.init() #init pygame
     #camera on pygame only works with linux so you need to pull the camera from /dev
     input('Plug In Your Camera. Press ENTER or RETURN to continue')
-    '''
+
     camlist = pygame.camera.list_cameras()
     for i in camlist: # loop through camera list so it doesnt just fail
         try:
             video_input = pygame.camera.Camera(i, (1280,720), 'RGB')
             video_input.start()
+            break # grabs first camera that works
         except:
             sys.stderr.write('ERROR: camera ' +  str(i) + ' Failed To Start\n')
+            video_input = False # this is probably a bad idea but it might work
+
+    if not video_input:
+        sys.stderr.write('ERROR: Cameras Failed To Initalised: EXITING\n')
+        exit()
 
     #video_input.start()
-    this might need more work
-    '''
-    video_input = pygame.camera.Camera('/dev/video0', (1280,720), 'RGB')
-    video_input.start()
+
+
+    #video_input = pygame.camera.Camera('/dev/video0', (1280,720), 'RGB')
+    #video_input.start()
     try:
         rpi = init_network() # get the rpi connect
     except:
-        sys.stderr.write('make sure the pi server is up first\nERROR: network failed to connect: exiting\n')
+        sys.stderr.write('make sure the pi server is up first\nERROR: network failed to connect: EXITING\n')
         exit()
     input('Point Your Camera at the Lights. Press ENTER or RETURN to continue')
     #For instructions requirement
     cords = [[0, 0, -1]] # just a thing so that error checking is able to be calculated
     sleep(.5)
     for i in range(50): # there are 50 lights so this is how to get them
-
         cords.append(get_cords(i, (cords[-1][0], cords[-1][1]), rpi, video_input)) #put the cordinates on the list
+
     cords.pop(0)
     #print(cords)
     for i in range(48):
@@ -147,7 +154,7 @@ def main():
     request_light(rpi, 500)
     sleep(.5)
     rpi.send(str(cords).encode())
-    print('sent cords')
+    print('Cords Sent to Remote Device')
     try:
         os.remove('led.png') # delete the temp image file
     except:
