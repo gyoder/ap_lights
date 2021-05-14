@@ -38,25 +38,15 @@ def get_bright_old(image):
 
 def get_bright(image):
     npimage = np.array(image) #make the image a numpy array for raw data processing
-    red_cords = find_brightness_points(npimage)
-    while len(red_cords) == 0:
-        #red_cords = find_brightness_points(npimage)
+    high_con_points = find_brightness_points(npimage)
+    while len(high_con_points) == 0:
         return (0, 0, 0)
-    #print(len(red_cords))
-    red_cords = sorted(red_cords, key = lambda x: x[2]) #https://www.geeksforgeeks.org/python-sort-list-according-second-element-sublist/
-    # ^^ sorts it by contrast
 
-    #for i in range(round(len(red_cords) * .9) - 1):
-        #red_cords.pop(0)# gets the top 10% of contrast lights
-    #print(red_cords)
-    red_cords = np.array(red_cords)
-    #print(red_cords)
-
-    (locX, locY, contrast) = np.mean(red_cords, axis=0) #https://numpy.org/doc/stable/reference/generated/numpy.median.html
-    #find the median
-    ## TODO: make it so that it will check for advrage vs median just to see what is off
-
-    return locX, locY, contrast
+    high_con_points = sorted(high_con_points, key = lambda x: x[2]) #https://www.geeksforgeeks.org/python-sort-list-according-second-element-sublist/
+    # ^^ sorts it by brighness
+    high_con_points = np.array(high_con_points)
+    (locX, locY, brighness) = np.mean(high_con_points, axis=0) #https://numpy.org/doc/stable/reference/generated/numpy.median.html
+    return locX, locY, brighness
 
 def find_contrast_points(img_array): # returns a list of high contrast points
     xcord = 0
@@ -75,12 +65,12 @@ def find_brightness_points(img_array):
     xcord = 0
     high_brightness_points = []
     for i in img_array:
-        xcord += 1 #this is a bit bad. make it read what idderation its on
+        xcord += 1
         ycord = 0# reset each time
         for j in i:
             ycord += 1
             brighness = (int(j[0]) + int(j[1]) + int(j[2])) / 3 # find the brighness
-            if brighness > 240:# might want to make this more reasonable
+            if brighness > 240:
                 high_brightness_points.append((xcord, ycord, brighness))
     return high_brightness_points
 
@@ -135,22 +125,13 @@ def main():
     cords = [[0, 0, -1]] # just a thing so that error checking is able to be calculated
     sleep(.5)
     for i in range(50): # there are 50 lights so this is how to get them
-        cords.append(get_cords(i, (cords[-1][0], cords[-1][1]), rpi, video_input)) #put the cordinates on the list
+        cords.append(get_cords(i, (cords[-1][0], cords[-1][1]),
+            rpi, video_input)) #put the cordinates on the list
 
     cords.pop(0)
-    #print(cords)
-    for i in range(48):
-        cords[i+1].append(round((math.sqrt(((cords[i+1][0]-cords[i][0])**2) + ((cords[i+1][1]-cords[i][1])**2))) + (math.sqrt(((cords[i+1][0]-cords[i-1][0])**2) + ((cords[i][1]-cords[i-1][1])**2)))))
-        # i hope that ^^^ never breaks because i do NOT want to know what i was thinking when writing that
-    cords[0].append(cords[1][3])
-    cords[49].append(cords[48][3])
-    cordsdist = 0
-    for i in cords:
-        #print(i[3])
-        cordsdist += i[3]
-    cordsdist = cordsdist / 50
-    #print(cordsdist)
-    #print(cords)
+
+    cords = get_confidence(cords)
+
     request_light(rpi, 500)
     sleep(.5)
     rpi.send(str(cords).encode())
@@ -159,4 +140,35 @@ def main():
         os.remove('led.png') # delete the temp image file
     except:
         pass
+
+def get_confidence(cords):
+    distance = []
+    for i in range(len(cords)-2):
+        distance.append(round((math.sqrt(((cords[i+1][0]-cords[i][0])**2)
+        + ((cords[i+1][1]-cords[i][1])**2)))
+        + (math.sqrt(((cords[i+1][0]-cords[i-1][0])**2)
+        + ((cords[i][1]-cords[i-1][1])**2)))))
+
+    mean = 0
+    for i in distance:
+        mean += i
+    mean /= len(distance)
+
+    for i in range(len(distance)):
+        if distance[i] >= mean * 2:
+            cords[i+1].append('R')
+        elif distance[i] >= mean:
+            cords[i+1].append('G')
+        elif distance[i] <= mean:
+            cords[i+1].append('B')
+        else:
+            cords[i+1].append('R')
+
+    cords[0].append(cords[1][3])
+    cords[-1].append(cords[-2][3])
+
+    return cords
+
+
+
 main()
